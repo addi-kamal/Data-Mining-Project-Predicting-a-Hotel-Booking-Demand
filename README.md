@@ -344,7 +344,7 @@ y_pred = model.predict(X_test)
 accuracy_score(y_test, y_pred)
 ```
 
-Ce modèle a deux avantages par rapport aux autres : 
+Ce modèle à deux avantages par rapport aux autres : 
 1.	Il donne la meilleure performance
 2.	Il est très rapide en terme de temps d’exécution 
 
