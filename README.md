@@ -153,7 +153,7 @@ Pour bien comprendre le fonctionnement d’une matrice de confusion, il convient
 * FP (False Positive) : les cas où la prédiction est positive, mais où la valeur réelle est négative. Exemple : le médecin vous annonce que vous êtes enceinte, mais vous n’êtes pas enceinte.
 * FN (False Negative) : les cas où la prédiction est négative, mais où la valeur réelle est positive. Exemple : le médecin vous annonce que vous n’êtes pas enceinte, mais vous êtes enceinte.
 
-# IMAGE
+
                            
 Calcule de la matrice de confusion en python : 
 
