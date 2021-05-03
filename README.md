@@ -1,69 +1,350 @@
-# data-mining-project
+# Data Mining Project
 
-I. Dataset: 
+## IV-Modeling :
+Dans cette partie, nous allons : 
 
-1.	Data description  :
+1. Préparer les données 
+3. Préparer un modèle d'apprentissage automatique 
+4. Évaluer les prédictions du modèle 
+5. Expérimenter différents modèles de classification 
+6. Hyperparameter Tuning : KNN avec RandomzedSearchCV 
+7. LGBMClassifier 
 
-This data describes two datasets with hotel demand data. One of the hotels (H1) is a resort hotel and the other is a city hotel (H2). Both datasets share the same structure, with 31 variables describing the 40,060 observations of H1 and 79,330 observations of H2. Each observation represents a hotel booking.  Since this is hotel real data, all data elements pertaining hotel or costumer identification were deleted. 
+```python
 
-2.	Data Dictionary :
+```
+Nous allons travailler avec la librairie Scikit-learn.
+
+<img src="https://github.com/addi-kamal/data-mining-project/blob/main/sklearn.png"  width="700" height="400" />
+                      
+Scikit-learn est une librairie pour Python spécialisée dans le machine learning (apprentissage automatique). Elle propose dans son framework de nombreuses algorithmes.
+
+## 1.	Préparer les données :
+
+Nous commencerons par l’élimination des colonnes qu’on va pas utiliser dans notre modélisation :
+
+```python
+main_cols = df_pre.columns.difference(['children', 'meal', 'reservation_status', 
+                                       'reservation_status_date', 'arrival_date']).tolist()
+df_pre = df_pre[main_cols]
+df_pre.head()
+```
+
+Les colonnes de type « String » :
+
+```python
+df_pre_object = df_pre.select_dtypes(include=['object']).copy()
+df_pre_object.head()
+```
 
 
+On doit transformer ces colonnes en types « intiger », sinon le modèle ça ne va pas marche :
 
-| **Variable**        | **Class**      | **Description**  |
-| ------|-----|-----|
-|hotel | 	character |	Hotel (H1 = Resort Hotel or H2 = City Hotel) |
-|is_canceled |	double 	| Value indicating if the booking was canceled (1) or not (0) |
-| lead_time |	double |	Number of days that elapsed between the entering date of the booking into the PMS and the arrival date |
-|arrival_date_year |	double |	Year of arrival date |
-|	arrival_date_month |		character 	|	Month of arrival date |	
-|	arrival_date_week_nu mber | 	double | 	Week number of year for arrival date |	
-|	arrival_date_day_of_month |	double  |	Day of arrival date |	
-|	stays_in_weekend_ni ghts |		double | 	Number of weekend nights (Saturday or Sunday) the guest stayed or booked to stay at the hotel |	
-|	stays_in_week_nights |		double |		Number of week nights (Monday to Friday) the guest stayed or booked to stay at the hotel |	
-|	adults |		double |		Number of adults |	
-|	children |		double | 	Number of children |	
-|	babies |		double | 	Number of babies |	
-|	meal |		character |		Type of meal booked. Categories are presented in standard hospitality meal packages: Undefined/SC – no meal package; BB – Bed & Breakfast; |	
-|	country  |		character  |		Country of origin. Categories are represented in the ISO 3155– 3:2013 format  |	
-|	market_segment  |		character  |		Market segment designation. In categories, the term “TA” means “Travel Agents” and “TO” means “Tour Operators”  |	
-|	distribution_channel  |		character  |		Booking distribution channel. The term “TA” means “Travel Agents” and “TO” means “Tour Operators”  |	
-|	is_repeated_guest  |		double  |		Value indicating if the booking name was from a repeated guest (1) or not (0)  |	
-|	previous_cancellation  |		double  |		Number of previous bookings that were cancelled by the customer prior to the current booking  |	
-|	previous_bookings_n ot_canceled  |		double  |		Number of previous bookings not cancelled by the customer prior to the current booking  |	
-|	reserved_room_type  |		character  |		Code of room type reserved. Code is presented instead of designation for anonymity reasons  |	
-|	assigned_room_type  |		character  |		Code for the type of room assigned to the booking. Sometimes the assigned room type differs from the reserved room type due to hotel operation reasons (e.g. overbooking) or by customer request. Code is presented instead of designation for anonymity reasons  |	
-|	booking_changes |double |	Number of changes/amendments made to the booking from the moment the booking was entered on the PMS until the moment of check-in or cancellation |
-|	deposit_type  |		character | 	Indication on if the customer made a deposit to guarantee the booking. This variable can assume three categories: No Deposit – no deposit was made; Non Refund – a deposit was made in the value of the total stay cost; Refundable – a deposit was made with a value under the total cost of stay.  |	
-|	agent 	 |	character  |		ID of the travel agency that made the booking  |	
-|	company  |	character |	ID of the company/entity that made the booking or responsible for paying the booking. ID is presented instead of designation for anonymity reasons |
-|	days_in_waiting_list  |	double  |	Number of days the booking was in the waiting list before it was confirmed to the customer  |	
-|	customer_type  |		character  |		Type of booking, assuming one of four categories: Contract - when the booking has an allotment or other type of contract associated to it; Group – when the booking is associated to a group; Transient – when the booking is not part of a group or contract, and is not associated to other transient booking; Transient-party – when the booking is transient, but is associated to at least other transient booking  |	
-|	adr  |		double | 	Average Daily Rate as defined by dividing the sum of all lodging transactions by the total number of staying nights  |	
-|	required_car_parking _spaces  |		double  |	 	Number of car parking spaces required by the customer  |	
- |	total_of_special_requests  |	double 	 |	Number of special requests made by the customer (e.g. twin bed or high floor)  |	
- |	reservation_status  |		character  |		Reservation last status, assuming one of three categories: Canceled – booking was canceled by the customer; Check-Out – customer has checked in but already departed; No-Show – customer did not check-in and did inform the hotel of the reason why  |	
- |	reservation_status_date  |	double | 	Date at which the last status was set. This variable can be used in conjunction with the ReservationStatus to understand when was the booking canceled or when did the customer checked-out of the hotel  |	
+On utilise la technique « one hot encoding » 
+
+```python
+# One hot encoding
+df_pre = pd.get_dummies(df_pre, columns = ['hotel', 'market_segment', 'distribution_channel', 'assigned_room_type',
+                                           'reserved_room_type', 'deposit_type', 'customer_type'])
+```
  
-II. Data preprocessing :
+Notre objectif ici est de créer un modèle d'apprentissage automatique sur toutes les colonnes restantes dans le dataframe, à l'exception des targets pour prédire les targets « is_canceled ». 
 
-1.	Verify missing values 
-2.	Drop rows having missing values except for variables like Agent or Company, “NULL” is presented as one of the categories. 
-3.	Change arrival year, month and day feature to datetime format called arrival_date. 
-4.	Verify that the timestamp of the variable reservation_status_date must occur after or at the same date as the input variable arrival_date 
-5.	Propose a preprocessing to be made on this dataset. 
+En substance, la colonne « is_canceled » est notre variable cible (également appelée y ou label) et le reste des autres colonnes sont nos variables indépendantes (également appelées caractéristiques ou X). 
 
-III. Exploratory data analysis: 
+```python
+X = df_pre.drop('is_canceled', axis = 1)
+y = df_pre['is_canceled']
+```
 
-1.	Create dataset summary statistics – Date variables. 
-2.	Create dataset summary statistics – Categorical variables. 
-3.	Create dataset summary statistics – Integer and numeric variables. 
-4.	Check the distribution of hotel type for cancellation 
-5.	Plot distribution of cancellation and Number of Adults 
-6.	Taking in consideration the characteristics of the variables included in this dataset propose two possible modeling this dataset can have an important role for research and education in revenue management (i.e define two possible target variables and the purpose of each analysis) 
+Maintenant que nous avons divisé nos données en X et y, nous utiliserons Scikit-Learn pour les diviser en ensembles d'entraînement et de test (80% de training et 20% de test).
 
-IV. Modeling :
+```python
+# Splitting Data
+from sklearn.model_selection import train_test_split
 
-Like any business, hotels are also looking to gain profit. Propose a model that predicts if the booking is likely to be canceled which could be a good indication for hotels, as they may prefer to accept the lower risk bookings first. Choose two data mining technics and compare their performances. 
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
+```
+
+## 2.	Préparer un modèle d'apprentissage automatique :
+
+Étant donné que nos données sont maintenant dans des ensembles d'entraînement et de test, nous allons créer un modèle d'apprentissage automatique pour adapter les modèles dans les données d'entraînement, puis effectuer des prédictions sur les données de test. 
+
+Pour ce faire commencent d’abord par l’importation des modèles qu’on va utiliser et les métriques pour évaluer les performances de ces modèles :
+
+```python
+# Libs
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+
+from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
+
+from sklearn.metrics import accuracy_score, precision_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
+
+np.random.seed(100)
+```
  
+Dans cette partie nous allons appliquer une régression logistique en utilisant le classifier **LogisiticRegression** de la librerie scikit-learn :
+
+La régression logistique porte assez mal son nom car il ne s’agit pas à proprement parler d’une régression au sens classique du terme (on essaye pas d’expliquer une variable quantitative mais de classer des individus dans deux catégories). 
+
+Cette méthode présente depuis de nombreuses années est la méthode la plus utilisée aujourd’hui en production pour construire des modèles de classification. 
+
+Nous pouvons lancer la régression maintenant. Après appel du constructeur de la classe LogisticRegression() où nous passons les données, nous faisons appel à la fonction fit() qui génère un objet résultat doté de propriétés et méthodes qui nous seront très utiles par la suite. 
+
+```python
+# training
+model_logReg = LogisticRegression()
+model_logReg.fit(X_train, y_train)
+```
+
+## 3.	Évaluer les prédictions du modèle :
+
+Évaluer les prédictions est très important. Vérifions comment notre modèle en appelant la méthode score() et en lui passant les données d'entraînement (X_train, y_train) et de test (X_test, y_test).
  
+ ```python
+# performance on training data
+model_logReg.score(X_train, y_train)
+
+# performance on test data
+model_logReg.score(X_test, y_test)
+```
+
+Faisons quelques prédictions sur les données de test en utilisant notre dernier modèle et sauvegardons-les dans y_pred :
+
+```python
+# make prediction
+y_pred = model_logReg.predict(X_test)
+```
+ 
+Il est temps d'utiliser les prédictions que notre modèle a trouvé pour l'évaluer :
+
+### a.	Le Rapport de Classification :
+
+Les colonnes de ce rapport de classification sont :
+
+* Précision - Indique la proportion d'identifications positives (classe 1 prédite par le modèle) qui étaient réellement correctes. Un modèle qui ne produit aucun faux positif a une précision de 1,0. 
+* Rappel - Indique la proportion de positifs réels qui ont été correctement classés. Un modèle qui ne produit aucun faux négatif a un rappel de 1,0. 
+* Score F1 - Une combinaison de précision et de rappel. Un modèle parfait obtient un score F1 de 1,0. 
+* Support - Le nombre d'échantillons sur lequel chaque métrique a été calculée. 
+* Précision - La précision du modèle sous forme décimale. La précision parfaite est égale à 1,0. 
+* Macro moyenne - Abréviation de macro moyenne, la précision moyenne, le rappel et le score F1 entre les classes. La macro moyenne ne classe pas le déséquilibre en effort, donc si vous avez des déséquilibres de classe, faites attention à cette métrique. 
+* Moyenne pondérée - Abréviation de moyenne pondérée, précision moyenne pondérée, rappel et score F1 entre les classes. Pondéré signifie que chaque métrique est calculée par rapport au nombre d'échantillons dans chaque classe. Cette métrique favorisera la classe majoritaire (par exemple, donnera une valeur élevée lorsqu'une classe surpassera une autre en raison du plus grand nombre d'échantillons). 
+
+```python
+cl_report = classification_report(y_test, y_pred) 
+print(cl_report)
+```
+
+### b.	La Matrice de confusion :
+
+Une Confusion Matrix (matrice de confusion) ou tableau de contingence est un outil permettant de mesurer les performances d’un modèle de Machine Learning en vérifiant notamment à quelle fréquence ses prédictions sont exactes par rapport à la réalité dans des problèmes de classification.
+
+Pour bien comprendre le fonctionnement d’une matrice de confusion, il convient de bien comprendre les quatre terminologies principales : TP, TN, FP et FN. Voici la définition précise de chacun de ces termes :
+
+* TP (True Positives) : les cas où la prédiction est positive, et où la valeur réelle est effectivement positive. Exemple : le médecin vous annonce que vous êtes enceinte, et vous êtes bel et bien enceinte.
+* TN (True Negatives) : les cas où la prédiction est négative, et où la valeur réelle est effectivement négative. Exemple : le médecin vous annonce que vous n’êtes pas enceinte, et vous n’êtes effectivement pas enceinte.
+* FP (False Positive) : les cas où la prédiction est positive, mais où la valeur réelle est négative. Exemple : le médecin vous annonce que vous êtes enceinte, mais vous n’êtes pas enceinte.
+* FN (False Negative) : les cas où la prédiction est négative, mais où la valeur réelle est positive. Exemple : le médecin vous annonce que vous n’êtes pas enceinte, mais vous êtes enceinte.
+
+# IMAGE
+                           
+Calcule de la matrice de confusion en python : 
+
+```python
+cnf_matrix = confusion_matrix(y_test, y_pred)
+print(cnf_matrix)
+```
+
+Pour mieux voir cette matrice de confusion on peut la visualiser a l’aide de la bibliotheque seaborn et matplotlib.
+
+Cette visualisation permet d'analyser rapidement la matrice de confusion, ainsi analyser l'efficacité du modèle.
+ 
+ ```python
+f, ax = plt.subplots(figsize=(10,7))
+sns.heatmap(cnf_matrix, annot=True, fmt='.0f', ax=ax)
+plt.xlabel('y Actual')
+plt.ylabel('y Predicted')
+plt.show()
+```
+
+## 4.	Expérimenter différents modèles de classification :
+
+Nous allons maintenant essayer une série de différents modèles d'apprentissage automatique et voir lequel obtient les meilleurs résultats sur notre ensemble de données
+
+En parcourant la documentation de Scikit-Learn, nous voyons qu'il existe un certain nombre de modèles de classification différents que nous pouvons essayer.
+
+Pour notre cas, les modèles que nous allons essayer de comparer sont : 
+
+* LogisticRegression
+* DecisionTreeClassifier
+* RandomForestClassifier
+* KNeighborsClassifier
+* SVC
+
+Nous suivrons le même workflow que nous avons utilisé ci-dessus (sauf cette fois pour plusieurs modèles): 
+
+1. Importer un modèle d'apprentissage automatique 
+2. Préparez-le 
+3. Ajustez-le aux données et faites des prédictions 
+4. Évaluer le modèle ajusté
+
+Grâce à la cohérence de la conception de l'API de Scikit-Learn, nous pouvons utiliser pratiquement le même code pour ajuster, évaluer et faire des prédictions avec chacun de nos modèles.
+
+Pour voir quel modèle fonctionne le mieux, nous allons procéder comme suit : 
+
+1. Instancier chaque modèle dans un dictionnaire 
+2. Créer un dictionnaire de résultats vide 
+3. Ajustez chaque modèle sur les données d'entraînement 
+4. Evaluer chaque modèle sur les données de test 
+5. Vérifiez les résultats
+
+Étant donné que chaque modèle que nous utilisons a les mêmes fonctions fit () et score (), nous pouvons parcourir notre dictionnaire de modèles et appeler fit () sur les données d'entraînement, puis appeler score () avec les données de test
+
+```python
+%%time 
+
+models = {
+    "LogisticRegression" :LogisticRegression() ,
+    "DecisionTreeClassifier" : DecisionTreeClassifier(),
+    "RandomForestClassifier" : RandomForestClassifier(),
+    "KNN" : KNeighborsClassifier(),
+    "SVC" : SVC(),
+}
+results = {}
+
+for model_name, model in models.items():
+    model.fit(X_train, y_train)
+    results[model_name] = model.score(X_test, y_test)
+
+sort_results = sorted(results.items(), key=lambda x: x[1], reverse=True)
+sort_results
+```
+ 
+Le modèle qui fonctionne le mieux pour ce probleme est RandomForestClassifier. 
+
+Mais il est toujours possible d’améliorer la performance des autres algorithmes, prenons par exemple le KNN.
+
+## 5.	Hyperparameter Tuning : KNN avec RandomzedSearchCV :
+
+
+Pour trouver les meilleurs hyper-parametres  il suffit de créer deux listes Python k_range et weight_options, avec les hyper-paramètres. 
+
+Puisque nous avons un ensemble d'hyperparamètres, nous pouvons importer RandomizedSearchCV, lui transmettre le classifier et nos listes d'hyperparamètres et le laisser rechercher la meilleure combinaison.  
+
+```python
+# instantiate model
+knn = KNeighborsClassifier(n_neighbors=5)
+
+k_range = list(range(1, 10))
+weight_options = ['uniform', 'distance']
+param_dist = dict(n_neighbors=k_range, 
+                  weights=weight_options)
+
+rand = RandomizedSearchCV(knn, 
+                          param_dist, 
+                          cv=10, 
+                          scoring='accuracy', 
+                          n_iter=10, 
+                          random_state=5)
+
+# fit the grid with data
+rand.fit(X_train, y_train)
+```
+
+L’objet rand va conserver le bon parametrage et peut directement faire appel à la fonction predict() par exemple. 
+
+Nous pouvons aussi regarder quel paramétrage a été élu via les propriétés best_score_, best_params_ et best_estimator_. 
+
+```python
+# examine the best model
+print(rand.best_score_)
+print(rand.best_params_)
+print(rand.best_estimator_)
+```
+
+Cela nous donne le meilleur score obtenu avec la meilleure combinaison.
+
+Nous avons essayé de trouver les meilleurs hyperparamètres sur notre modèle en utilisant RandomizedSearchCV.
+
+Maintenant nous allons instancier une nouvelle instance de notre modèle en utilisant les meilleurs hyperparamètres trouvés par RandomizedSearchCV :
+
+**{'weights': 'distance', 'n_neighbors': 6}**
+
+```python
+# train your model using all data and the best known parameters
+
+# instantiate model with best parameters
+knn = KNeighborsClassifier(n_neighbors=6, weights='distance')
+# train the model
+knn.fit(X_train, y_train)
+```
+
+Après le processus de réglage des hyperparamètres, le score augmente de 2% :
+
+```python
+knn.score(X_test, y_test)
+```
+ 
+Faisons quelques prédictions sur les données de test en utilisant notre dernier modèle et sauvegardons-les dans y_pred.
+
+```python
+# make prediction
+y_pred = knn.predict(X_test)
+```
+  
+Il est temps d'utiliser les prédictions que notre modèle a trouvé pour l'évaluer en utilisent la matrice de confusion :
+
+```python
+cnf_matrix = confusion_matrix(y_test, y_pred)
+f, ax = plt.subplots(figsize=(10,7))
+sns.heatmap(cnf_matrix, annot=True, fmt='.0f', ax=ax)
+plt.xlabel('y Actual')
+plt.ylabel('y Predicted')
+plt.show()
+```
+  
+## 6.	LGBMClassifier :
+
+Maintenant on va travailler avec une autre series d’algorithmes, performants et rapides :
+
+Lightgbm est une bibliothèque qui utilise des algorithmes d'apprentissage basés sur les arbres. Il est conçu pour être distribué et efficace par rapport aux autres algorithmes. Un modèle qui peut être utilisé à des fins de comparaison est XGBoost, qui est également une méthode de stimulation et il fonctionne exceptionnellement bien par rapport aux autres algorithmes. Lightgbm peut gérer une grande quantité de données, moins d'utilisation de la mémoire, un apprentissage parallèle et GPU, une bonne précision, une vitesse d'entraînement plus rapide et une efficacité.
+
+
+Installons d’abord la librairie lightgbm :
+
+```python
+pip install lightgbm
+```
+  
+Le principe est le meme : 
+
+1. Importer le modèle d'apprentissage
+2. Instanciez-le 	
+3. Ajustez-le aux données et faites des prédictions 
+4. Évaluer le modèle ajusté 
+
+```python
+%time
+from lightgbm import LGBMClassifier
+# Train a model
+model = LGBMClassifier(random_state=31)
+model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = model.predict(X_test)
+
+# Check score
+accuracy_score(y_test, y_pred)
+```
+
+Ce modèle a deux avantages par rapport aux autres : 
+1.	Il donne la meilleure performance
+2.	Il est très rapide en terme de temps d’exécution 
+
